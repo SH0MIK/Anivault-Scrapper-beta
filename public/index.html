@@ -129,6 +129,7 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
 .source-icon { font-size:20px; margin-bottom:6px; }
 .source-name { font-size:11px; font-weight:700; color:var(--text); display:block; }
 .source-url { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:2px; display:block; }
+.v2-badge { font-family:var(--mono); font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; background:rgba(6,182,212,0.15); color:var(--accent2); vertical-align:middle; }
 
 .server-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; min-height:38px; align-items:flex-start; }
 .server-chip { font-family:var(--mono); font-size:11px; padding:6px 14px; border-radius:100px; border:1px solid var(--border); color:var(--muted); cursor:pointer; transition:all 0.15s; background:var(--bg); white-space:nowrap; }
@@ -252,7 +253,6 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
   <div class="nav-section">
     <div class="nav-section-label">Tools</div>
     <button class="nav-item" onclick="navScrollTo('tester',this)"><span class="nav-dot"></span>API Tester</button>
-    <button class="nav-item" onclick="navScrollTo('v2tester',this)"><span class="nav-dot"></span>v2 Tester</button>
     <button class="nav-item" onclick="navScrollTo('errors',this)"><span class="nav-dot"></span>Error Codes</button>
   </div>
 </nav>
@@ -625,7 +625,7 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
   <!-- ═══════════════════════════════════════ TESTER ═══════════════════════════════════════ -->
   <section class="section" id="tester">
     <div class="section-title">API Tester</div>
-        <div class="section-sub">Search for an anime, pick your source and server, then fetch live stream data. AnimeHeaven can also use a manual show id.</div>
+        <div class="section-sub">Search for an anime, pick your source and server, then fetch live stream data. AnimeHeaven can also use a manual show id. Sources tagged <span class="v2-badge">v2</span> resolve straight from the AniList ID — no server list, watch/episodes only.</div>
 
     <div class="tester-wrap">
       <div class="tester-top">
@@ -682,14 +682,14 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
             <div class="seg-control">
               <button class="seg-btn active" onclick="setType('sub',this)">SUB</button>
               <button class="seg-btn" onclick="setType('dub',this)">DUB</button>
-              <button class="seg-btn" onclick="setType('raw',this)">RAW</button>
+              <button class="seg-btn" id="rawTypeBtn" onclick="setType('raw',this)">RAW</button>
             </div>
           </div>
           <div>
             <label class="field-label">Endpoint</label>
             <div class="seg-control">
-              <button class="seg-btn active" onclick="setEndpoint('watch',this)">Watch</button>
-              <button class="seg-btn" onclick="setEndpoint('servers',this)">Servers</button>
+              <button class="seg-btn active" id="endpointWatchBtn" onclick="setEndpoint('watch',this)">Watch</button>
+              <button class="seg-btn" id="endpointServersBtn" onclick="setEndpoint('servers',this)">Servers</button>
               <button class="seg-btn" onclick="setEndpoint('episodes',this)">Episodes</button>
             </div>
           </div>
@@ -719,10 +719,36 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
             <span class="source-name">Anikoto</span>
             <span class="source-url">anikoto.net</span>
           </div>
+          <div class="source-card" onclick="setSource('reanime',this)" id="src-reanime">
+            <div class="source-icon">🔥</div>
+            <span class="source-name">ReAnime <span class="v2-badge">v2</span></span>
+            <span class="source-url">reanime.to</span>
+          </div>
+          <div class="source-card" onclick="setSource('anineko',this)" id="src-anineko">
+            <div class="source-icon">🐾</div>
+            <span class="source-name">AniNeko <span class="v2-badge">v2</span></span>
+            <span class="source-url">anineko.to</span>
+          </div>
+          <div class="source-card" onclick="setSource('2dhive',this)" id="src-2dhive">
+            <div class="source-icon">🐝</div>
+            <span class="source-name">2dHive <span class="v2-badge">v2</span></span>
+            <span class="source-url">2dhive.com</span>
+          </div>
+          <div class="source-card" onclick="setSource('anizone',this)" id="src-anizone">
+            <div class="source-icon">🌀</div>
+            <span class="source-name">AniZone <span class="v2-badge">v2</span></span>
+            <span class="source-url">anizone.to</span>
+          </div>
+          <div class="source-card" onclick="setSource('kaa',this)" id="src-kaa">
+            <div class="source-icon">😼</div>
+            <span class="source-name">KAA <span class="v2-badge">v2</span></span>
+            <span class="source-url">kaa.lt</span>
+          </div>
         </div>
+        <div id="v2SourceNote" style="display:none;font-family:var(--mono);font-size:10px;color:var(--muted);margin:-12px 0 20px">This source resolves directly from the AniList ID above — no server list, sub only unless noted.</div>
 
         <!-- SERVER SELECTION -->
-        <div style="margin-bottom:20px">
+        <div id="serverSelectWrap" style="margin-bottom:20px">
           <label class="field-label">Server
             <span id="serverLoadingLabel" style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px;display:none">
               <span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>
@@ -793,110 +819,6 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
     </div>
   </section>
 
-  <!-- V2 TESTER -->
-  <section class="section" id="v2tester">
-    <div class="section-title">v2 Tester</div>
-    <div class="section-sub">These sources resolve straight from an AniList ID — no search/mapping step needed. Pick a provider, paste an AniList ID, and fetch.</div>
-
-    <div class="tester-wrap">
-      <div class="tester-top">
-        <div class="tester-dot" style="background:#ff5f57"></div>
-        <div class="tester-dot" style="background:#febc2e"></div>
-        <div class="tester-dot" style="background:#28c840"></div>
-        <span style="font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:8px">anivault-api · v2 tester</span>
-      </div>
-
-      <div class="tester-body">
-
-        <!-- PROVIDER -->
-        <label class="field-label">Provider</label>
-        <div class="source-grid" style="margin-bottom:20px">
-          <div class="source-card active" onclick="v2SetProvider('reanime',this)" id="v2src-reanime">
-            <div class="source-icon">🔥</div>
-            <span class="source-name">ReAnime</span>
-            <span class="source-url">reanime.to</span>
-          </div>
-          <div class="source-card" onclick="v2SetProvider('anineko',this)" id="v2src-anineko">
-            <div class="source-icon">🐾</div>
-            <span class="source-name">AniNeko</span>
-            <span class="source-url">anineko.to</span>
-          </div>
-          <div class="source-card" onclick="v2SetProvider('2dhive',this)" id="v2src-2dhive">
-            <div class="source-icon">🐝</div>
-            <span class="source-name">2dHive</span>
-            <span class="source-url">2dhive.com</span>
-          </div>
-          <div class="source-card" onclick="v2SetProvider('anizone',this)" id="v2src-anizone">
-            <div class="source-icon">🌀</div>
-            <span class="source-name">AniZone</span>
-            <span class="source-url">anizone.to</span>
-          </div>
-          <div class="source-card" onclick="v2SetProvider('kaa',this)" id="v2src-kaa">
-            <div class="source-icon">😼</div>
-            <span class="source-name">KAA</span>
-            <span class="source-url">kaa.lt</span>
-          </div>
-        </div>
-
-        <!-- ANILIST ID -->
-        <div style="margin-bottom:20px">
-          <label class="field-label">AniList ID</label>
-          <input class="field-input" id="v2AnilistId" type="number" min="1" placeholder="e.g. 21 (One Piece)" oninput="v2UpdatePreview()" autocomplete="off" />
-        </div>
-
-        <!-- EP / TYPE / ENDPOINT -->
-        <div class="field-row-3" style="margin-bottom:20px">
-          <div>
-            <label class="field-label">Episode Number</label>
-            <input class="field-input" id="v2EpInput" type="number" min="1" value="1" placeholder="1" oninput="v2UpdatePreview()" />
-          </div>
-          <div>
-            <label class="field-label">Audio Type</label>
-            <div class="seg-control">
-              <button class="seg-btn active" onclick="v2SetAudio('sub',this)">SUB</button>
-              <button class="seg-btn" onclick="v2SetAudio('dub',this)">DUB</button>
-            </div>
-          </div>
-          <div>
-            <label class="field-label">Endpoint</label>
-            <div class="seg-control">
-              <button class="seg-btn active" onclick="v2SetEndpoint('watch',this)">Watch</button>
-              <button class="seg-btn" onclick="v2SetEndpoint('episodes',this)">Episodes</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- BASE URL -->
-        <div style="margin-bottom:20px">
-          <label class="field-label">API Base URL</label>
-          <input class="field-input" id="v2BaseUrl" placeholder="https://your-app.up.railway.app (blank = this server)" oninput="v2UpdatePreview()" />
-        </div>
-
-        <!-- GENERATED URL PREVIEW -->
-        <div id="v2UrlPreview" style="font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;margin-bottom:16px;color:var(--muted);word-break:break-all">
-          <span style="color:var(--muted)">URL will appear here</span>
-        </div>
-
-        <button class="fetch-btn" id="v2FetchBtn" onclick="v2DoFetch()">⚡ Fetch</button>
-
-        <!-- RESULTS -->
-        <div class="result-area" id="v2ResultArea">
-          <div class="divider"></div>
-          <div class="status-bar" id="v2StatusBar" style="display:none">
-            <div class="status-dot" id="v2StatusDot"></div>
-            <span class="status-url" id="v2StatusUrl"></span>
-            <span id="v2StatusCode"></span>
-          </div>
-          <div class="result-json">
-            <div class="code-header">Response <button class="copy-btn" onclick="v2CopyResult()">Copy</button></div>
-            <pre id="v2JsonOutput"></pre>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
   <!-- ERRORS -->
   <section class="section" id="errors">
     <div class="section-title">Error Codes</div>
@@ -925,6 +847,8 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
 <script>
 // ── STATE
 let selType = 'sub', selSource = 'senshi', selServer = '', selEndpoint = 'watch';
+const V2_SOURCES = ['reanime', 'anineko', '2dhive', 'anizone', 'kaa'];
+function isV2(s) { return V2_SOURCES.includes(s); }
 let selAnime = null, lastResult = null;
 let debounceTimer = null;
 
@@ -959,86 +883,6 @@ function copyResult() {
   }
 }
 
-// ── V2 TESTER (reanime / anineko / 2dhive / anizone / kaa) ──────────
-let v2Provider = 'reanime', v2Audio = 'sub', v2Endpoint = 'watch', v2LastResult = null;
-
-function v2SetProvider(p, el) {
-  v2Provider = p;
-  document.querySelectorAll('#v2tester .source-card').forEach(c => c.classList.remove('active'));
-  if (el) el.classList.add('active');
-  v2UpdatePreview();
-}
-function v2SetAudio(t, el) {
-  v2Audio = t;
-  el.parentElement.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  v2UpdatePreview();
-}
-function v2SetEndpoint(e, el) {
-  v2Endpoint = e;
-  el.parentElement.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  v2UpdatePreview();
-}
-
-function v2BuildUrl() {
-  const base = (document.getElementById('v2BaseUrl').value || '').trim().replace(/\/$/, '') || window.location.origin;
-  const anilistId = (document.getElementById('v2AnilistId').value || '').trim();
-  const ep = (document.getElementById('v2EpInput').value || '1').trim();
-  if (!anilistId) return null;
-  if (v2Endpoint === 'episodes') {
-    return `${base}/api/v2/episodes/${v2Provider}/${anilistId}`;
-  }
-  return `${base}/api/v2/watch/${v2Provider}/${anilistId}/${v2Audio}/${ep}`;
-}
-
-function v2UpdatePreview() {
-  const url = v2BuildUrl();
-  const el = document.getElementById('v2UrlPreview');
-  el.innerHTML = url ? url : '<span style="color:var(--muted)">Enter an AniList ID to build the URL</span>';
-}
-
-async function v2DoFetch() {
-  const url = v2BuildUrl();
-  if (!url) { v2UpdatePreview(); return; }
-  const btn = document.getElementById('v2FetchBtn');
-  const statusBar = document.getElementById('v2StatusBar');
-  const statusDot = document.getElementById('v2StatusDot');
-  const statusUrl = document.getElementById('v2StatusUrl');
-  const statusCode = document.getElementById('v2StatusCode');
-  const out = document.getElementById('v2JsonOutput');
-
-  btn.disabled = true;
-  btn.textContent = '⏳ Fetching...';
-  statusBar.style.display = 'flex';
-  statusUrl.textContent = url;
-  statusDot.style.background = 'var(--warning)';
-  statusCode.textContent = '';
-  out.textContent = '';
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    v2LastResult = data;
-    statusDot.style.background = res.ok ? 'var(--success)' : 'var(--accent)';
-    statusCode.textContent = res.status;
-    out.textContent = JSON.stringify(data, null, 2);
-  } catch (e) {
-    statusDot.style.background = 'var(--accent)';
-    statusCode.textContent = 'ERR';
-    out.textContent = String(e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '⚡ Fetch';
-  }
-}
-
-function v2CopyResult() {
-  if (v2LastResult) navigator.clipboard.writeText(JSON.stringify(v2LastResult, null, 2));
-}
-
-v2UpdatePreview();
-
 // ── SEGMENT CONTROLS
 function setType(t, btn) {
   selType = t;
@@ -1052,9 +896,24 @@ function setSource(s, card) {
   document.querySelectorAll('.source-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   document.getElementById('heavenIdWrap').style.display = s === 'animeheaven' ? 'block' : 'none';
+
+  const v2 = isV2(s);
+  document.getElementById('v2SourceNote').style.display = v2 ? 'block' : 'none';
+  document.getElementById('serverSelectWrap').style.display = v2 ? 'none' : 'block';
+  // v2 sources only support watch/episodes — no /servers endpoint
+  document.getElementById('endpointServersBtn').style.display = v2 ? 'none' : 'inline-block';
+  if (v2 && selEndpoint === 'servers') {
+    setEndpoint('watch', document.getElementById('endpointWatchBtn'));
+  }
+  // v2 has no "raw" audio type
+  if (v2 && selType === 'raw') {
+    setType('sub', document.querySelector('.seg-control .seg-btn'));
+  }
+  document.getElementById('rawTypeBtn').style.display = v2 ? 'none' : 'inline-block';
+
   resetServers();
   updateUrlPreview();
-  if (selAnime && document.getElementById('epInput').value) loadServers();
+  if (!v2 && selAnime && document.getElementById('epInput').value) loadServers();
 }
 function setEndpoint(e, btn) {
   selEndpoint = e;
@@ -1089,7 +948,7 @@ function getHeavenId() {
 async function loadServers() {
   const ep = document.getElementById('epInput').value;
   const heavenId = getHeavenId();
-  if (!ep) return;
+  if (!ep || isV2(selSource)) return;
   if (selSource !== 'animeheaven' && !selAnime) return;
   if (selSource === 'animeheaven' && !selAnime && !heavenId) return;
 
@@ -1131,7 +990,7 @@ async function loadServers() {
 
 function onEpChange() {
   updateUrlPreview();
-  loadServers();
+  if (!isV2(selSource)) loadServers();
 }
 
 // ── SEARCH
@@ -1186,7 +1045,7 @@ function pickAnime(r) {
   resetServers();
   updateUrlPreview();
   const ep = document.getElementById('epInput').value;
-  if (ep) loadServers();
+  if (ep && !isV2(selSource)) loadServers();
 }
 
 function clearSelection() {
@@ -1202,6 +1061,14 @@ function buildUrl() {
   const base = getBase();
   const ep = document.getElementById('epInput').value || '1';
   const heavenId = getHeavenId();
+
+  if (isV2(selSource)) {
+    if (!selAnime) return null;
+    const audio = selType === 'dub' ? 'dub' : 'sub'; // v2 has no "raw"
+    if (selEndpoint === 'episodes') return `${base}/api/v2/episodes/${selSource}/${selAnime.id}`;
+    return `${base}/api/v2/watch/${selSource}/${selAnime.id}/${audio}/${ep}`;
+  }
+
   if (selSource === 'animeheaven' && heavenId) {
     if (selEndpoint === 'watch') return `${base}/api/watch?source=animeheaven&heavenId=${encodeURIComponent(heavenId)}&ep=${ep}&type=${selType}`;
     if (selEndpoint === 'servers') return `${base}/api/servers?source=animeheaven&heavenId=${encodeURIComponent(heavenId)}&ep=${ep}&type=${selType}`;
@@ -1236,7 +1103,9 @@ function escapeAttr(value) {
 }
 
 function primaryEmbedUrl(data) {
-  return data.streamUrl || data.mp4ProxyUrl || data.mp4 || data.embedUrl || data.servers?.[0]?.url || data.servers?.[0]?.sourceId || '';
+  return data.streamUrl || data.mp4ProxyUrl || data.mp4 || data.embedUrl
+    || data.servers?.[0]?.url || data.servers?.[0]?.sourceId
+    || data.streams?.[0]?.url || '';
 }
 
 function renderEmbedPreview(data) {
@@ -1338,6 +1207,8 @@ async function doFetch() {
           <div class="stream-card-val">${data.intro?`Intro: ${data.intro.start}s–${data.intro.end}s`:'No intro'}${data.outro?`  ·  Outro: ${data.outro.start}s–${data.outro.end}s`:''}</div>
         </div>
         ${data.note ? `<div class="stream-card" style="grid-column:1/-1;border-color:rgba(245,158,11,0.4)"><div class="stream-card-label" style="color:var(--warning)">⚠ Note</div><div class="stream-card-val">${data.note}</div></div>` : ''}
+        ${(data.streams||[]).map((s,i) => `<div class="stream-card" style="grid-column:1/-1"><div class="stream-card-label">Stream ${i+1} (${s.type||'?'} · ${s.server||'—'})</div><div class="stream-card-val"><a href="${s.url}" target="_blank">${s.url}</a></div></div>`).join('')}
+        ${data.allServers ? `<div class="stream-card" style="grid-column:1/-1"><div class="stream-card-label">All Servers (v2)</div><div class="stream-card-val">${data.allServers.map(s=>s.name).join(', ') || '<span class="null-val">-</span>'}</div></div>` : ''}
       `;
     } else {
       document.getElementById('streamCards').innerHTML = `
