@@ -683,6 +683,21 @@ router.get('/v2/watch/:provider/:anilistId/:audio/:ep', async (req: Request, res
   if (isNaN(epNum)) return res.status(400).json({ error: 'ep must be a number' });
   try {
     const data = await v2Watch[provider as V2Source](anilistId, audio, epNum);
+    // Some v2 scrapers (kaa, anineko) hand back the raw upstream CDN m3u8 URL
+    // plus a `referer` the CDN requires. Browsers can't set a custom Referer
+    // header on <video>/hls.js requests, so loading that URL directly always
+    // gets hotlink-blocked even though the URL itself is valid. Route any raw
+    // hls stream through our own proxy (same as the v1 sources do) so the
+    // Referer gets set server-side. 2dhive's own `/api/v2/stream/...` passthrough
+    // is left alone — it's already same-origin — just absolutized to a full URL.
+    if (Array.isArray((data as any).streams)) {
+      (data as any).streams = (data as any).streams.map((s: any) => {
+        if (s.type !== 'hls' || typeof s.url !== 'string') return s;
+        if (s.url.startsWith('/api/')) return { ...s, url: `${publicBase(req)}${s.url}` };
+        if (/^https?:\/\//i.test(s.url)) return { ...s, url: proxiedHlsUrl(req, s.url, s.referer) };
+        return s;
+      });
+    }
     return res.json({ anilistId: Number(anilistId), provider, episode: epNum, audio, ...data });
   } catch (e) {
     return res.status(502).json({ error: (e as Error).message || String(e) });
