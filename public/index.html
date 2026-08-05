@@ -1108,13 +1108,47 @@ function primaryEmbedUrl(data) {
     || data.streams?.[0]?.url || '';
 }
 
+function normalizeSubtitles(subs) {
+  if (!Array.isArray(subs)) return [];
+  return subs
+    .filter(s => s && s.url)
+    .map(s => {
+      const lang = (s.srclang || s.lang || s.language || 'en').toString();
+      return {
+        url: s.url,
+        srclang: lang.slice(0, 2) || 'en',
+        label: s.label || s.lang || s.language || lang || 'Subtitles',
+        default: !!s.default,
+      };
+    });
+}
+
+function subtitleTrackTags(subs) {
+  const hasDefault = subs.some(s => s.default);
+  return subs.map((s, i) => {
+    const isDefault = s.default || (!hasDefault && i === 0);
+    return `<track kind="subtitles" src="${escapeAttr(s.url)}" srclang="${escapeAttr(s.srclang)}" label="${escapeAttr(s.label)}"${isDefault ? ' default' : ''}>`;
+  }).join('');
+}
+
+function findHlsUrl(data) {
+  if (data.hlsProxyUrl) return data.hlsProxyUrl;
+  if (data.m3u8) return data.m3u8;
+  const streamHls = (data.streams || []).find(s => s.type === 'hls' && s.url);
+  if (streamHls) return streamHls.url;
+  const embedUrl = primaryEmbedUrl(data);
+  return embedUrl && embedUrl.includes('.m3u8') ? embedUrl : '';
+}
+
 function renderEmbedPreview(data) {
   const ep = document.getElementById('embedPreview');
   const embedUrl = primaryEmbedUrl(data);
-  const hlsUrl = data.hlsProxyUrl || data.m3u8 || (embedUrl && embedUrl.includes('.m3u8') ? embedUrl : '');
+  const hlsUrl = findHlsUrl(data);
+  const subs = normalizeSubtitles(data.subtitles || (data.streams || []).find(s => s.type === 'hls')?.subtitles);
+  const tracks = subtitleTrackTags(subs);
 
   if (hlsUrl) {
-    ep.innerHTML = `<video id="hlsPreview" controls playsinline></video>`;
+    ep.innerHTML = `<video id="hlsPreview" controls playsinline crossorigin="anonymous">${tracks}</video>`;
     const video = document.getElementById('hlsPreview');
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsUrl;
@@ -1129,7 +1163,7 @@ function renderEmbedPreview(data) {
   }
 
   if (data.mp4 || data.playbackMode === 'mp4') {
-    ep.innerHTML = `<video controls playsinline src="${escapeAttr(embedUrl)}"></video>`;
+    ep.innerHTML = `<video controls playsinline crossorigin="anonymous" src="${escapeAttr(embedUrl)}">${tracks}</video>`;
     return;
   }
 
