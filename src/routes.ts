@@ -693,9 +693,15 @@ router.get('/v2/watch/:provider/:anilistId/:audio/:ep', async (req: Request, res
     if (Array.isArray((data as any).streams)) {
       (data as any).streams = (data as any).streams.map((s: any) => {
         if (s.type !== 'hls' || typeof s.url !== 'string') return s;
-        if (s.url.startsWith('/api/')) return { ...s, url: `${publicBase(req)}${s.url}` };
-        if (/^https?:\/\//i.test(s.url)) return { ...s, url: proxiedHlsUrl(req, s.url, s.referer) };
-        return s;
+        const proxiedUrl = s.url.startsWith('/api/')
+          ? `${publicBase(req)}${s.url}`
+          : /^https?:\/\//i.test(s.url)
+            ? proxiedHlsUrl(req, s.url, s.referer)
+            : s.url;
+        const proxiedSubs = Array.isArray(s.subtitles)
+          ? s.subtitles.map((sub: any) => (sub?.url ? { ...sub, url: proxiedSubtitleUrl(req, sub.url, s.referer) } : sub))
+          : s.subtitles;
+        return { ...s, url: proxiedUrl, subtitles: proxiedSubs };
       });
     }
     return res.json({ anilistId: Number(anilistId), provider, episode: epNum, audio, ...data });
