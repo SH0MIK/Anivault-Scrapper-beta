@@ -34,7 +34,6 @@ export interface ProviderStream {
   url: string;
   type: 'hls';
   server: string;
-  referer: string;
   subtitles: AniZoneSubtitle[];
   storyboard: string | null;
   chapters: string | null;
@@ -278,12 +277,6 @@ export async function getAnizoneWatch(anilistId: number | string, audio: 'sub' |
     url: watch.hls,
     type: 'hls',
     server: 'AniZone',
-    // AniZone's CDN, like most of these, blocks hotlinked segment requests
-    // that don't carry its own Referer. Without this, every segment fetch
-    // through /proxy/hls comes from a bare server-to-server request and
-    // gets rejected identically each time — which looks like the stream
-    // "timing out" client-side rather than an obvious error.
-    referer: `${BASE}/`,
     subtitles: watch.subtitles,
     storyboard: watch.storyboard,
     chapters: watch.chapters,
