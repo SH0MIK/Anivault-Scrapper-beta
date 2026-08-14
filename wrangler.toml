@@ -1,0 +1,20 @@
+name = "anivault-api"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Serves public/index.html (the docs/tester page) via the ASSETS binding
+# used in src/index.ts's catch-all route.
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+# ── Environment variables ───────────────────────────────────────────────
+# Non-secret values can go here. Anything sensitive (BOT_SECRET, tokens,
+# etc.) should be set as Secrets in the CF dashboard instead (Workers &
+# Pages → your worker → Settings → Variables), NOT committed here.
+[vars]
+# FLARESOLVERR_URL = "https://your-flaresolverr-instance"
+# SITE_URL = "https://www.anivault.co"
+# RATE_LIMIT_WINDOW_MS = "60000"
+# RATE_LIMIT_MAX = "60"

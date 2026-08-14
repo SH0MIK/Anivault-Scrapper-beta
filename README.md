@@ -1,193 +1,81 @@
-<div align="center">
+# AniVault Scraper API — Cloudflare Workers port
 
-# AniVault Scraper API
+Ported from the original Express/Railway app to run on Cloudflare Workers
+(Hono + native `fetch`). Type-checks clean and bundles successfully with
+`wrangler deploy --dry-run` (~1MB / 238KB gzipped).
 
-**The video-sourcing backend for [AniVault](https://www.anivault.co).**
+## Deploy via GitHub + Cloudflare Workers Builds (no CLI needed)
 
-Resolves anime titles → episodes → live, playable streams (sub & dub) across
-multiple streaming providers, with built-in HLS/subtitle/video proxying so
-everything plays with clean CORS, no matter what the upstream server sends.
+1. Push this folder as a new GitHub repo.
+2. In the Cloudflare dashboard: **Workers & Pages → Create → Import a
+   repository**, pick this repo. Cloudflare will detect `wrangler.toml` and
+   handle `npm install` + build/deploy automatically on every push.
+3. Set environment variables/secrets under **Settings → Variables** on the
+   deployed Worker (see list below). Don't put secrets in `wrangler.toml`.
+4. Every future `git push` auto-deploys.
 
-</div>
+## Environment variables to set in the dashboard
 
----
-
-## How it works
-
-```mermaid
-flowchart LR
-    Client([AniVault site / Senshi Player]) -->|1: search / info| API[Scraper API]
-    API -->|AniList + MAL ID mapping| AniList[(AniList GraphQL)]
-    Client -->|2: episodes| API
-    Client -->|3: servers| API
-    Client -->|4: watch| API
-    API -->|scrape| Sources{{Senshi · AnimeHeaven<br/>Miruro · Anikoto}}
-    Sources -->|embed / m3u8 / mp4| API
-    API -->|proxied stream + subtitles| Client
-```
-
-A typical playback flow is `search → info → episodes → servers → watch`:
-resolve the anime, list its episodes, list which servers have episode N,
-then resolve that server into an actual playable stream. `/watch` can also
-be called directly if you already know the source/episode.
+| Name | Used by | Notes |
+|---|---|---|
+| `BOT_SECRET` | discord-relay | Secret — must match your PHP config + Vercel bot |
+| `VERCEL_BOT_URL` | discord-relay `/relay` | e.g. `https://anivault-bot.vercel.app` |
+| `DISCORD_APP_ID` | discord-relay | Discord application ID |
+| `SITE_URL` | discord-relay | Defaults to `https://www.anivault.co` |
+| `FLARESOLVERR_URL` | fetch.ts, discord-relay | Only needed if you still run FlareSolverr somewhere reachable from the public internet — Workers can't run it itself |
+| `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` | index.ts fallback limiter | Optional, see caveat below |
+| `CACHE_TTL_MAPPING` / `CACHE_TTL_EPISODES` / `CACHE_TTL_STREAM` | cache.ts | Optional, seconds |
 
 ## Sources
 
-| Source | Status | Notes |
-|---|---|---|
-| **Senshi** (senshi.live) | ✅ Verified | Behind Cloudflare — requires **FlareSolverr** to solve the challenge before scraping |
-| **AnimeHeaven** (animeheaven.me) | ✅ Verified | Not behind Cloudflare, no FlareSolverr needed — direct MP4 sources |
-| **Anikoto** (anikoto.net) | ✅ Verified | Megacloud/Megaplay decryption + a direct-CDN side channel |
-| **Miruro** (miruro.tv) | ⚠️ **Offline** | Upstream pipe endpoint is currently down — requests will fail until it comes back |
-| **ReAnime** (reanime.to) v2 | ⚠️ Verify | AniList-ID direct; custom WASM+AES decrypt, may need updates if the site rotates its obfuscation |
-| **AniNeko** (anineko.to) v2 | ⚠️ Verify | AniList-ID direct via title search/match |
-| **2dHive** (2dhive.com) v2 | ⚠️ Verify | Resolves via MAL ID (from AniList), inline HLS + MegaPlay fallback |
-| **AniZone** (anizone.to) v2 | ⚠️ Verify | AniList-ID direct via title search/match, sub only |
-| **KAA / KickAssAnime** (kaa.lt) v2 | ⚠️ Verify | AniList-ID direct via title search/match |
+Only **AnimeHeaven** and **Anikoto** are wired in. Senshi and Miruro were
+dropped (both had stopped working) along with everything only they needed:
+`scrapers/senshi.ts`, `scrapers/miruro.ts`, and `resolvers/megacloud.ts`
+(Senshi's separate embed resolver — not to be confused with the
+self-contained megacloud decryption logic inside `anikoto.ts`, which stays).
+`crypto-js` was removed from dependencies since it was only used by that
+deleted resolver.
 
-FlareSolverr runs as a separate service; set `FLARESOLVERR_URL` in the
-environment so Senshi requests can solve the Cloudflare challenge. The API
-also pings it periodically to keep it warm on free-tier hosts.
+## What changed from the Express version
 
-## Endpoints
+- **Removed entirely:** `image-migrator.ts` (used `basic-ftp`/raw TCP sockets
+  and `archiver` — neither can run on Workers, no workaround exists).
+- **Removed:** the two `/api/debug/miruro*` routes (marked "remove before
+  production" in the original) and `process.uptime()` from `/health` (no
+  persistent process on Workers).
+- **Dropped as dead code:** `anidao.ts`, `animepahe.ts`, `aniwaves.ts`,
+  `reanime.ts` — none of these were actually imported by `routes.ts`.
+- **Express → Hono**, `axios` → native `fetch` via a small compatibility
+  shim (`src/utils/http.ts`) so the scraper files barely changed.
+- **`node-cache` → in-memory `Map`** (`src/utils/cache.ts`). Caveat: this
+  only survives as long as the current Worker isolate does — Cloudflare
+  reuses isolates for a while under steady traffic, but a cold isolate
+  starts with an empty cache. For persistence across isolates/deploys,
+  swap to Workers KV.
+- **`express-rate-limit` → best-effort in-memory limiter**, same isolate
+  caveat as above. The reliable replacement is Cloudflare's native
+  **Rate Limiting Rules**, configured in the dashboard against this
+  Worker's route — no code needed, and it actually works across the whole
+  edge, not just one isolate. Recommended over the in-code fallback.
+- **`node:zlib`, `node:buffer`** (used by `miruro.ts`/`anikoto.ts`) work
+  natively under the `nodejs_compat` flag with the compatibility date set
+  in `wrangler.toml` — no changes needed beyond the `node:` import prefix.
+- **`express.static`** → Workers Static Assets (`[assets]` binding in
+  `wrangler.toml`, serves `public/index.html`).
 
-All routes are mounted under `/api`.
+## Known unresolved gap
 
-### `GET /api/search?q=`
-Search AniList for a title.
-```
-GET /api/search?q=naruto
-→ { query, count, results[] }
-```
+`discord-relay.ts`'s original InfinityFree call used
+`new https.Agent({ rejectUnauthorized: false })` to skip TLS certificate
+verification. Workers' `fetch` has **no way to disable TLS verification** —
+this isn't a missing polyfill, it's not exposed at all. If InfinityFree's
+cert is genuinely invalid, this specific call will fail on Workers with no
+in-Worker fix; it'd need a valid cert at the source, or that one call
+proxied through something that isn't Workers.
 
-### `GET /api/info`
-Resolve an anime's AniList/MAL IDs and per-source site IDs.
-| Param | Required | Notes |
-|---|---|---|
-| `anilistId` | one of these | |
-| `malId` | one of these | |
-```
-GET /api/info?malId=20
-→ { anilistId, malId, title, siteIds: { zoro, animeheaven, anikoto, ... } }
-```
-
-### `GET /api/episodes`
-List episodes for a title on a given source.
-| Param | Required | Notes |
-|---|---|---|
-| `anilistId` / `malId` | yes* | *unless `heavenId` is used with `source=animeheaven` |
-| `source` | no | `senshi` \| `animeheaven` \| `miruro` \| `anikoto` (default `senshi`) |
-| `heavenId` | no | manual AnimeHeaven show id |
-```
-GET /api/episodes?anilistId=20&source=senshi
-→ { anilistId, malId, title, source, siteId, count, episodes[] }
-```
-
-### `GET /api/servers`
-List available servers (sub/dub) for a specific episode.
-| Param | Required | Notes |
-|---|---|---|
-| `anilistId` / `malId` | yes* | |
-| `ep` | **yes** | episode number |
-| `type` | no | `sub` \| `dub` \| `all` (default `sub`) |
-| `source` | no | default `senshi` |
-| `heavenId` | no | manual AnimeHeaven show id |
-```
-GET /api/servers?anilistId=20&ep=1&type=sub&source=senshi
-→ { anilistId, malId, title, episode, type, source, servers[] }
-```
-
-### `GET /api/watch/:source/:id/:ep/:type`
-Resolve a real, playable stream for an episode — the main playback endpoint.
-| Path param | Notes |
-|---|---|
-| `source` | `senshi` \| `animeheaven` \| `miruro` \| `anikoto` |
-| `id` | AniList id (or `mal-{id}`, or AnimeHeaven id) |
-| `ep` | episode number |
-| `type` | `sub` \| `dub` |
-
-| Query param | Notes |
-|---|---|
-| `server` | prefer a specific server by name |
-| `strict` | `1`/`true` — only use `server`, don't fall back to others |
+## Local dev
 
 ```
-GET /api/watch/senshi/20/1/sub
-GET /api/watch/miruro/20/1/sub?server=bonk-sub
-→ { embedUrl, m3u8, hlsProxyUrl, playbackMode, subtitles[], server, availableServers[], ... }
+npm install
+npx wrangler dev
 ```
-
-### `GET /api/watch`
-Same as above, as query params instead of a path — useful when building a
-URL dynamically.
-```
-GET /api/watch?source=senshi&anilistId=20&ep=1&type=sub
-```
-
-### `GET /api/proxy/hls?url=&ref=`
-Proxies an `.m3u8` playlist (and rewrites internal segment/key URIs to also
-route through this proxy) so the browser never hits the upstream CDN
-directly — fixes CORS and Referer/Origin restrictions.
-
-### `GET /api/proxy/subtitle?url=&ref=`
-Proxies a subtitle track with open CORS, converting SRT → WEBVTT on the fly
-if needed.
-
-### `GET /api/proxy/video?url=`
-Proxies a direct MP4 stream (used by AnimeHeaven), forwarding `Range`
-requests for seeking.
-
-### `GET /api/health`
-```
-→ { status, version, sources[], uptime, cache, timestamp }
-```
-
-### v2 sources: ReAnime, AniNeko, 2dHive, AniZone, KAA
-
-These don't go through the site-ID mapper above — they resolve straight from
-an AniList ID by searching the target site and picking the best title match
-themselves (same idea as Anikoto, just kept in their own route family since
-they don't share the SOURCES/site-ID plumbing).
-
-### `GET /api/v2/episodes/:provider/:anilistId`
-
-`:provider` is one of `reanime`, `anineko`, `2dhive`, `anizone`, `kaa`.
-
-```
-GET /api/v2/episodes/reanime/21
-GET /api/v2/episodes/anizone/21
-```
-
-### `GET /api/v2/watch/:provider/:anilistId/:audio/:ep`
-
-`:audio` is `sub` or `dub` (AniZone is sub-only).
-
-```
-GET /api/v2/watch/reanime/21/sub/1
-GET /api/v2/watch/kaa/21/dub/1
-```
-
-Live-test all five from the docs page → **v2 Tester** section, or in the
-sidebar under **AniList Sources (v2)**.
-
-### Debug (internal)
-`GET /api/debug/miruro` and `GET /api/debug/miruro-sources` dump the raw
-Miruro pipe response for a given provider/episode — used for diagnosing the
-current Miruro outage, not part of the stable public surface.
-
-## Tech stack
-
-| | |
-|---|---|
-| Runtime | Node.js (Express), TypeScript |
-| Scraping | Cheerio, Axios |
-| Cloudflare bypass | FlareSolverr |
-| Caching | node-cache (in-memory), optional Upstash Redis |
-| Hosting | Railway |
-
-## Status
-
-Senshi, AnimeHeaven, and Anikoto are live and verified. Miruro is currently
-**offline** upstream — its pipe endpoint is down, and the debug routes above
-exist specifically to track when it comes back.
-
