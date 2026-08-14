@@ -267,3 +267,4 @@ export async function searchAnilist(query: string): Promise<{
   cacheSet(cacheKey, results, 'episodes');
   return results;
 }
+
