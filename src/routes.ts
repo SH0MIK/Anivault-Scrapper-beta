@@ -176,9 +176,17 @@ async function watchHandler(c: any, source: string, id: string, ep: string, type
   if (isNaN(epNum)) return c.json({ error: 'ep must be a number' }, 400);
   if (!['sub', 'dub', 'raw'].includes(type)) return c.json({ error: 'type must be: sub, dub, raw' }, 400);
 
-  const directHeavenId = source === 'animeheaven' && !id.startsWith('mal-') && !/^\d+$/.test(id);
-  const anilistId = directHeavenId || id.startsWith('mal-') ? undefined : id;
-  const malId = id.startsWith('mal-') ? id.replace('mal-', '') : undefined;
+  // ID convention for this path (site is MAL-first): a bare numeric ID or
+  // "mal-<id>" is a MAL ID (primary path, no AniList involved). "al-<id>"
+  // opts into the AniList fallback explicitly. Anything else non-numeric on
+  // animeheaven is treated as a literal AnimeHeaven slug.
+  const forceAnilist = id.startsWith('al-');
+  const explicitMal = id.startsWith('mal-');
+  const bareNumeric = /^\d+$/.test(id);
+  const directHeavenId = source === 'animeheaven' && !forceAnilist && !explicitMal && !bareNumeric;
+
+  const anilistId = forceAnilist ? id.replace('al-', '') : undefined;
+  const malId = !forceAnilist && !directHeavenId ? (explicitMal ? id.replace('mal-', '') : id) : undefined;
 
   try {
     const siteIds = directHeavenId
@@ -293,7 +301,7 @@ app.get('/watch', async (c) => {
   if (!anilistId && !malId && !(source === 'animeheaven' && heavenId)) {
     return c.json({ error: 'Provide ?anilistId= or ?malId=, or ?heavenId= for AnimeHeaven' }, 400);
   }
-  const id = heavenId && source === 'animeheaven' ? String(heavenId) : anilistId ? String(anilistId) : `mal-${malId}`;
+  const id = heavenId && source === 'animeheaven' ? String(heavenId) : anilistId ? `al-${anilistId}` : `mal-${malId}`;
   return watchHandler(c, source, id, String(ep), type);
 });
 
