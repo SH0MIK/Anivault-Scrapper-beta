@@ -33,12 +33,23 @@ async function enrichAnikoto(result: SiteIds): Promise<SiteIds> {
   return result;
 }
 
-// ── MAL (Jikan) — primary search + resolution path ─────────────────────────
-// Jikan (https://jikan.moe) is a free, unofficial MAL API wrapper — no key
-// or OAuth needed, unlike MAL's own API. Used as the primary path since the
-// site is MAL-ID-first; AniList (below) is only a fallback for callers that
-// explicitly pass ?anilistId=.
-const JIKAN_BASE = 'https://api.jikan.moe/v4';
+// ── MAL (official API v2) — primary search + resolution path ───────────────
+// api.myanimelist.net is MAL's own official API — fast and reliable, unlike
+// Jikan which scrapes MAL's website live on every request (source of the
+// intermittent 504s). Public read endpoints (search, anime details) only
+// need a Client ID, no OAuth login flow. Get one free at
+// https://myanimelist.net/apiconfig → set as MAL_CLIENT_ID in the CF
+// dashboard. AniList (below) is only a fallback for callers that explicitly
+// pass ?anilistId=.
+const MAL_API_BASE = 'https://api.myanimelist.net/v2';
+
+function malHeaders(): Record<string, string> {
+  const clientId = process.env.MAL_CLIENT_ID || '';
+  if (!clientId) {
+    throw new Error('MAL_CLIENT_ID is not configured — get a free Client ID at https://myanimelist.net/apiconfig and set it as an env var');
+  }
+  return { 'X-MAL-Client-ID': clientId, 'Accept': 'application/json', 'User-Agent': UA };
+}
 
 export async function searchMal(query: string): Promise<{
   malId: number; anilistId: number | null; title: string; coverImage: string; episodes: number | null; status: string; format: string;
@@ -47,22 +58,25 @@ export async function searchMal(query: string): Promise<{
   const cached = cacheGet<any[]>(cacheKey);
   if (cached) return cached;
 
-  const res = await axios.get(`${JIKAN_BASE}/anime`, {
-    params: { q: query, limit: 10, sfw: false },
+  const res = await axios.get(`${MAL_API_BASE}/anime`, {
+    params: { q: query, limit: 10, fields: 'alternative_titles,main_picture,num_episodes,status,media_type' },
     timeout: 10000,
-    headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+    headers: malHeaders(),
   });
   const list: any[] = res.data?.data ?? [];
 
-  const results = list.map((a: any) => ({
-    malId: a.mal_id,
-    anilistId: null,
-    title: a.title_english || a.title,
-    coverImage: a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || '',
-    episodes: a.episodes ?? null,
-    status: a.status,
-    format: a.type,
-  }));
+  const results = list.map((entry: any) => {
+    const n = entry.node ?? entry;
+    return {
+      malId: n.id,
+      anilistId: null,
+      title: n.alternative_titles?.en || n.title,
+      coverImage: n.main_picture?.large || n.main_picture?.medium || '',
+      episodes: n.num_episodes || null,
+      status: n.status,
+      format: n.media_type,
+    };
+  });
 
   cacheSet(cacheKey, results, 'episodes');
   return results;
@@ -73,12 +87,13 @@ async function getMalTitle(malId: number): Promise<string> {
   const cached = cacheGet<string>(cacheKey);
   if (cached) return cached;
 
-  const res = await axios.get(`${JIKAN_BASE}/anime/${malId}`, {
+  const res = await axios.get(`${MAL_API_BASE}/anime/${malId}`, {
+    params: { fields: 'alternative_titles' },
     timeout: 10000,
-    headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+    headers: malHeaders(),
   });
-  const data = res.data?.data;
-  const title = data?.title_english || data?.title || 'Unknown';
+  const data = res.data;
+  const title = data?.alternative_titles?.en || data?.title || 'Unknown';
   if (title !== 'Unknown') cacheSet(cacheKey, title);
   return title;
 }
@@ -97,7 +112,10 @@ export async function getSiteIdsByMal(malId: number): Promise<SiteIds | null> {
     return enriched;
   }
 
-  const title = await getMalTitle(malId).catch(() => 'Unknown');
+  // Let a missing MAL_CLIENT_ID surface as a real error (500 with a clear
+  // message via routes.ts's catch block) instead of silently becoming a
+  // generic 404 — that's a config problem, not "anime not found".
+  const title = await getMalTitle(malId);
   if (title === 'Unknown') return null;
 
   // Best-effort AniList ID for callers that want it too — never let AniList
