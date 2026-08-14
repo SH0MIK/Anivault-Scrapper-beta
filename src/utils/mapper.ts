@@ -52,7 +52,7 @@ function malHeaders(): Record<string, string> {
 }
 
 export async function searchMal(query: string): Promise<{
-  malId: number; anilistId: number | null; title: string; coverImage: string; episodes: number | null; status: string; format: string;
+  id: number; malId: number; anilistId: number | null; title: string; coverImage: string; episodes: number | null; status: string; format: string;
 }[]> {
   const cacheKey = `malsearch:${query.toLowerCase().trim()}`;
   const cached = cacheGet<any[]>(cacheKey);
@@ -68,6 +68,7 @@ export async function searchMal(query: string): Promise<{
   const results = list.map((entry: any) => {
     const n = entry.node ?? entry;
     return {
+      id: n.id, // alias for malId — the site is MAL-first, so `id` here is the MAL ID
       malId: n.id,
       anilistId: null,
       title: n.alternative_titles?.en || n.title,
@@ -267,4 +268,3 @@ export async function searchAnilist(query: string): Promise<{
   cacheSet(cacheKey, results, 'episodes');
   return results;
 }
-
