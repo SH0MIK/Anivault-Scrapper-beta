@@ -129,7 +129,6 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
 .source-icon { font-size:20px; margin-bottom:6px; }
 .source-name { font-size:11px; font-weight:700; color:var(--text); display:block; }
 .source-url { font-family:var(--mono); font-size:9px; color:var(--muted); margin-top:2px; display:block; }
-.v2-badge { font-family:var(--mono); font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; background:rgba(6,182,212,0.15); color:var(--accent2); vertical-align:middle; }
 
 .server-chips { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; min-height:38px; align-items:flex-start; }
 .server-chip { font-family:var(--mono); font-size:11px; padding:6px 14px; border-radius:100px; border:1px solid var(--border); color:var(--muted); cursor:pointer; transition:all 0.15s; background:var(--bg); white-space:nowrap; }
@@ -238,7 +237,6 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
     <div class="nav-section-label">Overview</div>
     <button class="nav-item active" onclick="navScrollTo('overview',this)"><span class="nav-dot"></span>Introduction</button>
     <button class="nav-item" onclick="navScrollTo('sources',this)"><span class="nav-dot"></span>Sources</button>
-    <button class="nav-item" onclick="navScrollTo('v2sources',this)"><span class="nav-dot"></span>AniList Sources (v2)</button>
     <button class="nav-item" onclick="navScrollTo('structure',this)"><span class="nav-dot"></span>URL Structure</button>
   </div>
   <div class="nav-section">
@@ -325,85 +323,6 @@ pre { padding:20px; overflow-x:auto; font-family:var(--mono); font-size:12px; li
         <div class="sic-row"><span class="sic-row-label">Servers</span><span class="sic-row-val">Megacloud, Megaplay, Kiwi Mapper</span></div>
         <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub, Dub</span></div>
       </div>
-    </div>
-  </section>
-
-  <!-- V2 SOURCES -->
-  <section class="section" id="v2sources">
-    <div class="section-title">AniList Sources (v2)</div>
-    <div class="section-sub">These resolve directly from an AniList ID — no site-ID mapping needed. They search the target site by title and pick the best-scoring match themselves, same as the site's own search.</div>
-    <div class="sources-grid">
-      <div class="source-info-card">
-        <div class="sic-header">
-          <div class="sic-icon">🔥</div>
-          <div><div class="sic-name">ReAnime</div><div class="sic-url">reanime.to</div></div>
-          <span class="sic-tag verify">Verify selectors</span>
-        </div>
-        <div class="sic-row"><span class="sic-row-label">Key</span><span class="sic-row-val">reanime</span></div>
-        <div class="sic-row"><span class="sic-row-label">ID format</span><span class="sic-row-val">AniList ID (direct)</span></div>
-        <div class="sic-row"><span class="sic-row-label">Streams</span><span class="sic-row-val">flixcloud.cc (decrypted HLS)</span></div>
-        <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub, Dub</span></div>
-      </div>
-
-      <div class="source-info-card">
-        <div class="sic-header">
-          <div class="sic-icon">🐾</div>
-          <div><div class="sic-name">AniNeko</div><div class="sic-url">anineko.to</div></div>
-          <span class="sic-tag verify">Verify selectors</span>
-        </div>
-        <div class="sic-row"><span class="sic-row-label">Key</span><span class="sic-row-val">anineko</span></div>
-        <div class="sic-row"><span class="sic-row-label">ID format</span><span class="sic-row-val">AniList ID (direct)</span></div>
-        <div class="sic-row"><span class="sic-row-label">Streams</span><span class="sic-row-val">HLS / embed</span></div>
-        <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub, Dub</span></div>
-      </div>
-
-      <div class="source-info-card">
-        <div class="sic-header">
-          <div class="sic-icon">🐝</div>
-          <div><div class="sic-name">2dHive</div><div class="sic-url">2dhive.com</div></div>
-          <span class="sic-tag works">MAL-ID based</span>
-        </div>
-        <div class="sic-row"><span class="sic-row-label">Key</span><span class="sic-row-val">2dhive</span></div>
-        <div class="sic-row"><span class="sic-row-label">ID format</span><span class="sic-row-val">AniList ID → resolves MAL ID</span></div>
-        <div class="sic-row"><span class="sic-row-label">Streams</span><span class="sic-row-val">Inline HLS (proxied) + MegaPlay embed</span></div>
-        <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub, Dub (if available)</span></div>
-      </div>
-
-      <div class="source-info-card">
-        <div class="sic-header">
-          <div class="sic-icon">🌀</div>
-          <div><div class="sic-name">AniZone</div><div class="sic-url">anizone.to</div></div>
-          <span class="sic-tag verify">Verify selectors</span>
-        </div>
-        <div class="sic-row"><span class="sic-row-label">Key</span><span class="sic-row-val">anizone</span></div>
-        <div class="sic-row"><span class="sic-row-label">ID format</span><span class="sic-row-val">AniList ID (direct)</span></div>
-        <div class="sic-row"><span class="sic-row-label">Streams</span><span class="sic-row-val">Direct HLS + subtitle tracks</span></div>
-        <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub only</span></div>
-      </div>
-
-      <div class="source-info-card">
-        <div class="sic-header">
-          <div class="sic-icon">😼</div>
-          <div><div class="sic-name">KAA (KickAssAnime)</div><div class="sic-url">kaa.lt</div></div>
-          <span class="sic-tag verify">Verify selectors</span>
-        </div>
-        <div class="sic-row"><span class="sic-row-label">Key</span><span class="sic-row-val">kaa</span></div>
-        <div class="sic-row"><span class="sic-row-label">ID format</span><span class="sic-row-val">AniList ID (direct)</span></div>
-        <div class="sic-row"><span class="sic-row-label">Streams</span><span class="sic-row-val">HLS via krussdomi CDN</span></div>
-        <div class="sic-row"><span class="sic-row-label">Audio</span><span class="sic-row-val">Sub, Dub (if available)</span></div>
-      </div>
-    </div>
-
-    <div class="code-block" style="margin-top:20px">
-      <div class="code-header">v2 endpoints <button class="copy-btn" onclick="copyBlock(this)">Copy</button></div>
-      <pre><span class="cmt"># provider = reanime · anineko · 2dhive · anizone · kaa</span>
-
-GET /api/v2/episodes/<span class="str">{provider}</span>/<span class="str">{anilistId}</span>
-GET /api/v2/watch/<span class="str">{provider}</span>/<span class="str">{anilistId}</span>/<span class="str">{sub|dub}</span>/<span class="str">{ep}</span>
-
-<span class="cmt"># examples</span>
-GET /api/v2/episodes/<span class="str">reanime</span>/<span class="num">21</span>
-GET /api/v2/watch/<span class="str">anizone</span>/<span class="num">21</span>/<span class="str">sub</span>/<span class="num">1</span></pre>
     </div>
   </section>
 
@@ -625,7 +544,7 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
   <!-- ═══════════════════════════════════════ TESTER ═══════════════════════════════════════ -->
   <section class="section" id="tester">
     <div class="section-title">API Tester</div>
-        <div class="section-sub">Search for an anime, pick your source and server, then fetch live stream data. AnimeHeaven can also use a manual show id. Sources tagged <span class="v2-badge">v2</span> resolve straight from the AniList ID — no server list, watch/episodes only.</div>
+        <div class="section-sub">Search for an anime, pick your source and server, then fetch live stream data. AnimeHeaven can also use a manual show id.</div>
 
     <div class="tester-wrap">
       <div class="tester-top">
@@ -682,14 +601,14 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
             <div class="seg-control">
               <button class="seg-btn active" onclick="setType('sub',this)">SUB</button>
               <button class="seg-btn" onclick="setType('dub',this)">DUB</button>
-              <button class="seg-btn" id="rawTypeBtn" onclick="setType('raw',this)">RAW</button>
+              <button class="seg-btn" onclick="setType('raw',this)">RAW</button>
             </div>
           </div>
           <div>
             <label class="field-label">Endpoint</label>
             <div class="seg-control">
-              <button class="seg-btn active" id="endpointWatchBtn" onclick="setEndpoint('watch',this)">Watch</button>
-              <button class="seg-btn" id="endpointServersBtn" onclick="setEndpoint('servers',this)">Servers</button>
+              <button class="seg-btn active" onclick="setEndpoint('watch',this)">Watch</button>
+              <button class="seg-btn" onclick="setEndpoint('servers',this)">Servers</button>
               <button class="seg-btn" onclick="setEndpoint('episodes',this)">Episodes</button>
             </div>
           </div>
@@ -719,36 +638,10 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
             <span class="source-name">Anikoto</span>
             <span class="source-url">anikoto.net</span>
           </div>
-          <div class="source-card" onclick="setSource('reanime',this)" id="src-reanime">
-            <div class="source-icon">🔥</div>
-            <span class="source-name">ReAnime <span class="v2-badge">v2</span></span>
-            <span class="source-url">reanime.to</span>
-          </div>
-          <div class="source-card" onclick="setSource('anineko',this)" id="src-anineko">
-            <div class="source-icon">🐾</div>
-            <span class="source-name">AniNeko <span class="v2-badge">v2</span></span>
-            <span class="source-url">anineko.to</span>
-          </div>
-          <div class="source-card" onclick="setSource('2dhive',this)" id="src-2dhive">
-            <div class="source-icon">🐝</div>
-            <span class="source-name">2dHive <span class="v2-badge">v2</span></span>
-            <span class="source-url">2dhive.com</span>
-          </div>
-          <div class="source-card" onclick="setSource('anizone',this)" id="src-anizone">
-            <div class="source-icon">🌀</div>
-            <span class="source-name">AniZone <span class="v2-badge">v2</span></span>
-            <span class="source-url">anizone.to</span>
-          </div>
-          <div class="source-card" onclick="setSource('kaa',this)" id="src-kaa">
-            <div class="source-icon">😼</div>
-            <span class="source-name">KAA <span class="v2-badge">v2</span></span>
-            <span class="source-url">kaa.lt</span>
-          </div>
         </div>
-        <div id="v2SourceNote" style="display:none;font-family:var(--mono);font-size:10px;color:var(--muted);margin:-12px 0 20px">This source resolves directly from the AniList ID above — no server list, sub only unless noted.</div>
 
         <!-- SERVER SELECTION -->
-        <div id="serverSelectWrap" style="margin-bottom:20px">
+        <div style="margin-bottom:20px">
           <label class="field-label">Server
             <span id="serverLoadingLabel" style="color:var(--muted);font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px;display:none">
               <span class="spinner" style="width:10px;height:10px;border-width:1.5px"></span>
@@ -847,8 +740,6 @@ GET /api/watch?source=<span class="str">dao</span>&malId=<span class="num">21</s
 <script>
 // ── STATE
 let selType = 'sub', selSource = 'senshi', selServer = '', selEndpoint = 'watch';
-const V2_SOURCES = ['reanime', 'anineko', '2dhive', 'anizone', 'kaa'];
-function isV2(s) { return V2_SOURCES.includes(s); }
 let selAnime = null, lastResult = null;
 let debounceTimer = null;
 
@@ -896,24 +787,9 @@ function setSource(s, card) {
   document.querySelectorAll('.source-card').forEach(c => c.classList.remove('active'));
   card.classList.add('active');
   document.getElementById('heavenIdWrap').style.display = s === 'animeheaven' ? 'block' : 'none';
-
-  const v2 = isV2(s);
-  document.getElementById('v2SourceNote').style.display = v2 ? 'block' : 'none';
-  document.getElementById('serverSelectWrap').style.display = v2 ? 'none' : 'block';
-  // v2 sources only support watch/episodes — no /servers endpoint
-  document.getElementById('endpointServersBtn').style.display = v2 ? 'none' : 'inline-block';
-  if (v2 && selEndpoint === 'servers') {
-    setEndpoint('watch', document.getElementById('endpointWatchBtn'));
-  }
-  // v2 has no "raw" audio type
-  if (v2 && selType === 'raw') {
-    setType('sub', document.querySelector('.seg-control .seg-btn'));
-  }
-  document.getElementById('rawTypeBtn').style.display = v2 ? 'none' : 'inline-block';
-
   resetServers();
   updateUrlPreview();
-  if (!v2 && selAnime && document.getElementById('epInput').value) loadServers();
+  if (selAnime && document.getElementById('epInput').value) loadServers();
 }
 function setEndpoint(e, btn) {
   selEndpoint = e;
@@ -948,7 +824,7 @@ function getHeavenId() {
 async function loadServers() {
   const ep = document.getElementById('epInput').value;
   const heavenId = getHeavenId();
-  if (!ep || isV2(selSource)) return;
+  if (!ep) return;
   if (selSource !== 'animeheaven' && !selAnime) return;
   if (selSource === 'animeheaven' && !selAnime && !heavenId) return;
 
@@ -990,7 +866,7 @@ async function loadServers() {
 
 function onEpChange() {
   updateUrlPreview();
-  if (!isV2(selSource)) loadServers();
+  loadServers();
 }
 
 // ── SEARCH
@@ -1045,7 +921,7 @@ function pickAnime(r) {
   resetServers();
   updateUrlPreview();
   const ep = document.getElementById('epInput').value;
-  if (ep && !isV2(selSource)) loadServers();
+  if (ep) loadServers();
 }
 
 function clearSelection() {
@@ -1061,14 +937,6 @@ function buildUrl() {
   const base = getBase();
   const ep = document.getElementById('epInput').value || '1';
   const heavenId = getHeavenId();
-
-  if (isV2(selSource)) {
-    if (!selAnime) return null;
-    const audio = selType === 'dub' ? 'dub' : 'sub'; // v2 has no "raw"
-    if (selEndpoint === 'episodes') return `${base}/api/v2/episodes/${selSource}/${selAnime.id}`;
-    return `${base}/api/v2/watch/${selSource}/${selAnime.id}/${audio}/${ep}`;
-  }
-
   if (selSource === 'animeheaven' && heavenId) {
     if (selEndpoint === 'watch') return `${base}/api/watch?source=animeheaven&heavenId=${encodeURIComponent(heavenId)}&ep=${ep}&type=${selType}`;
     if (selEndpoint === 'servers') return `${base}/api/servers?source=animeheaven&heavenId=${encodeURIComponent(heavenId)}&ep=${ep}&type=${selType}`;
@@ -1103,52 +971,16 @@ function escapeAttr(value) {
 }
 
 function primaryEmbedUrl(data) {
-  return data.streamUrl || data.mp4ProxyUrl || data.mp4 || data.embedUrl
-    || data.servers?.[0]?.url || data.servers?.[0]?.sourceId
-    || data.streams?.[0]?.url || '';
-}
-
-function normalizeSubtitles(subs) {
-  if (!Array.isArray(subs)) return [];
-  return subs
-    .filter(s => s && s.url)
-    .map(s => {
-      const lang = (s.srclang || s.lang || s.language || 'en').toString();
-      return {
-        url: s.url,
-        srclang: lang.slice(0, 2) || 'en',
-        label: s.label || s.lang || s.language || lang || 'Subtitles',
-        default: !!s.default,
-      };
-    });
-}
-
-function subtitleTrackTags(subs) {
-  const hasDefault = subs.some(s => s.default);
-  return subs.map((s, i) => {
-    const isDefault = s.default || (!hasDefault && i === 0);
-    return `<track kind="subtitles" src="${escapeAttr(s.url)}" srclang="${escapeAttr(s.srclang)}" label="${escapeAttr(s.label)}"${isDefault ? ' default' : ''}>`;
-  }).join('');
-}
-
-function findHlsUrl(data) {
-  if (data.hlsProxyUrl) return data.hlsProxyUrl;
-  if (data.m3u8) return data.m3u8;
-  const streamHls = (data.streams || []).find(s => s.type === 'hls' && s.url);
-  if (streamHls) return streamHls.url;
-  const embedUrl = primaryEmbedUrl(data);
-  return embedUrl && embedUrl.includes('.m3u8') ? embedUrl : '';
+  return data.streamUrl || data.mp4ProxyUrl || data.mp4 || data.embedUrl || data.servers?.[0]?.url || data.servers?.[0]?.sourceId || '';
 }
 
 function renderEmbedPreview(data) {
   const ep = document.getElementById('embedPreview');
   const embedUrl = primaryEmbedUrl(data);
-  const hlsUrl = findHlsUrl(data);
-  const subs = normalizeSubtitles(data.subtitles || (data.streams || []).find(s => s.type === 'hls')?.subtitles);
-  const tracks = subtitleTrackTags(subs);
+  const hlsUrl = data.hlsProxyUrl || data.m3u8 || (embedUrl && embedUrl.includes('.m3u8') ? embedUrl : '');
 
   if (hlsUrl) {
-    ep.innerHTML = `<video id="hlsPreview" controls playsinline crossorigin="anonymous">${tracks}</video>`;
+    ep.innerHTML = `<video id="hlsPreview" controls playsinline></video>`;
     const video = document.getElementById('hlsPreview');
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = hlsUrl;
@@ -1163,7 +995,7 @@ function renderEmbedPreview(data) {
   }
 
   if (data.mp4 || data.playbackMode === 'mp4') {
-    ep.innerHTML = `<video controls playsinline crossorigin="anonymous" src="${escapeAttr(embedUrl)}">${tracks}</video>`;
+    ep.innerHTML = `<video controls playsinline src="${escapeAttr(embedUrl)}"></video>`;
     return;
   }
 
@@ -1241,8 +1073,6 @@ async function doFetch() {
           <div class="stream-card-val">${data.intro?`Intro: ${data.intro.start}s–${data.intro.end}s`:'No intro'}${data.outro?`  ·  Outro: ${data.outro.start}s–${data.outro.end}s`:''}</div>
         </div>
         ${data.note ? `<div class="stream-card" style="grid-column:1/-1;border-color:rgba(245,158,11,0.4)"><div class="stream-card-label" style="color:var(--warning)">⚠ Note</div><div class="stream-card-val">${data.note}</div></div>` : ''}
-        ${(data.streams||[]).map((s,i) => `<div class="stream-card" style="grid-column:1/-1"><div class="stream-card-label">Stream ${i+1} (${s.type||'?'} · ${s.server||'—'})</div><div class="stream-card-val"><a href="${s.url}" target="_blank">${s.url}</a></div></div>`).join('')}
-        ${data.allServers ? `<div class="stream-card" style="grid-column:1/-1"><div class="stream-card-label">All Servers (v2)</div><div class="stream-card-val">${data.allServers.map(s=>s.name).join(', ') || '<span class="null-val">-</span>'}</div></div>` : ''}
       `;
     } else {
       document.getElementById('streamCards').innerHTML = `
