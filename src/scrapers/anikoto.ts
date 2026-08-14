@@ -1,6 +1,7 @@
 import * as cheerio from 'cheerio';
-import axios from 'axios';
-import { inspect } from 'util';
+import axios from '../utils/http';
+import { inspect } from 'node:util';
+import { Buffer } from 'node:buffer';
 import { makeClient, makeAjaxClient } from '../utils/fetch';
 import { cacheGet, cacheSet } from '../utils/cache';
 
