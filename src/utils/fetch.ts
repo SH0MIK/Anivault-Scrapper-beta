@@ -1,6 +1,6 @@
 import http, { HttpConfig, HttpResponse } from './http';
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+export const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const FLARESOLVERR_URL = process.env.FLARESOLVERR_URL || '';
 
@@ -111,7 +111,11 @@ class AnilistClient {
   async post<T = any>(_path: string, body?: any): Promise<HttpResponse<T>> {
     return http.post<T>('https://graphql.anilist.co', body, {
       timeout: 10000,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'User-Agent': UA,
+      },
     });
   }
 }

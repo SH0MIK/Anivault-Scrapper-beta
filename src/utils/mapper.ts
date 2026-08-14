@@ -1,11 +1,11 @@
 import axios from '../utils/http';
-import { anilistClient } from './fetch';
+import { anilistClient, UA } from './fetch';
 import { cacheGet, cacheSet } from './cache';
 import { findAnimeHeavenId } from '../scrapers/animeheaven';
 import { findAnikotoSlug } from '../scrapers/anikoto';
 
 export interface SiteIds {
-  anilistId: number;
+  anilistId: number | null;
   malId: number | null;
   title: string;
   siteIds: {
@@ -33,7 +33,104 @@ async function enrichAnikoto(result: SiteIds): Promise<SiteIds> {
   return result;
 }
 
-// MAL ID → AniList ID
+// ── MAL (Jikan) — primary search + resolution path ─────────────────────────
+// Jikan (https://jikan.moe) is a free, unofficial MAL API wrapper — no key
+// or OAuth needed, unlike MAL's own API. Used as the primary path since the
+// site is MAL-ID-first; AniList (below) is only a fallback for callers that
+// explicitly pass ?anilistId=.
+const JIKAN_BASE = 'https://api.jikan.moe/v4';
+
+export async function searchMal(query: string): Promise<{
+  malId: number; anilistId: number | null; title: string; coverImage: string; episodes: number | null; status: string; format: string;
+}[]> {
+  const cacheKey = `malsearch:${query.toLowerCase().trim()}`;
+  const cached = cacheGet<any[]>(cacheKey);
+  if (cached) return cached;
+
+  const res = await axios.get(`${JIKAN_BASE}/anime`, {
+    params: { q: query, limit: 10, sfw: false },
+    timeout: 10000,
+    headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+  });
+  const list: any[] = res.data?.data ?? [];
+
+  const results = list.map((a: any) => ({
+    malId: a.mal_id,
+    anilistId: null,
+    title: a.title_english || a.title,
+    coverImage: a.images?.jpg?.large_image_url || a.images?.jpg?.image_url || '',
+    episodes: a.episodes ?? null,
+    status: a.status,
+    format: a.type,
+  }));
+
+  cacheSet(cacheKey, results, 'episodes');
+  return results;
+}
+
+async function getMalTitle(malId: number): Promise<string> {
+  const cacheKey = `maltitle:${malId}`;
+  const cached = cacheGet<string>(cacheKey);
+  if (cached) return cached;
+
+  const res = await axios.get(`${JIKAN_BASE}/anime/${malId}`, {
+    timeout: 10000,
+    headers: { 'User-Agent': UA, 'Accept': 'application/json' },
+  });
+  const data = res.data?.data;
+  const title = data?.title_english || data?.title || 'Unknown';
+  if (title !== 'Unknown') cacheSet(cacheKey, title);
+  return title;
+}
+
+// MAL ID → metadata + site-specific IDs (primary path)
+export async function getSiteIdsByMal(malId: number): Promise<SiteIds | null> {
+  const cacheKey = `siteids:mal:${malId}`;
+  const cached = cacheGet<SiteIds>(cacheKey);
+  if (cached) {
+    const wasMissingAnimeHeaven = !cached.siteIds.animeheaven;
+    const wasMissingAnikoto = !cached.siteIds.anikoto;
+    const enriched = await enrichAnikoto(await enrichAnimeHeaven(cached));
+    if ((wasMissingAnimeHeaven && enriched.siteIds.animeheaven) || (wasMissingAnikoto && enriched.siteIds.anikoto)) {
+      cacheSet(cacheKey, enriched);
+    }
+    return enriched;
+  }
+
+  const title = await getMalTitle(malId).catch(() => 'Unknown');
+  if (title === 'Unknown') return null;
+
+  // Best-effort AniList ID for callers that want it too — never let AniList
+  // trouble (rate limits, edge blocks, downtime) break this MAL-based path.
+  const anilistId = await malToAnilist(malId).catch(() => null);
+
+  const result: SiteIds = { anilistId, malId, title, siteIds: {} };
+  await enrichAnimeHeaven(result);
+  await enrichAnikoto(result);
+
+  cacheSet(cacheKey, result);
+  return result;
+}
+
+// Unified resolver used by routes.ts: malId is the primary path (Jikan,
+// no AniList dependency); anilistId is a fallback for callers that only
+// have an AniList ID.
+export async function resolveSiteIds(anilistId?: string | null, malId?: string | null): Promise<SiteIds | null> {
+  if (malId) {
+    const id = parseInt(malId);
+    if (isNaN(id)) return null;
+    return getSiteIdsByMal(id);
+  }
+  if (anilistId) {
+    const id = parseInt(anilistId);
+    if (isNaN(id)) return null;
+    return getSiteIds(id);
+  }
+  return null;
+}
+
+// ── AniList — fallback path (only used when caller passes ?anilistId=) ────
+
 export async function malToAnilist(malId: number): Promise<number | null> {
   const cacheKey = `mal2al:${malId}`;
   const cached = cacheGet<number>(cacheKey);
@@ -90,6 +187,7 @@ export async function getSiteIds(anilistId: number): Promise<SiteIds | null> {
     const res = await axios.get(`https://api.anify.tv/info/${anilistId}`, {
       params: { fields: 'mappings' },
       timeout: 8000,
+      headers: { 'User-Agent': UA },
     });
     const mappings: any[] = res.data?.mappings ?? [];
     for (const m of mappings) {
