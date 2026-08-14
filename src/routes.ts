@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { malToAnilist, getSiteIds, searchAnilist } from './utils/mapper';
+import { searchMal, resolveSiteIds } from './utils/mapper';
 import { cacheStats } from './utils/cache';
 
 import { getHeavenEpisodes, getHeavenServers, getHeavenStream } from './scrapers/animeheaven';
@@ -51,12 +51,6 @@ function rewriteHlsPlaylist(c: any, body: string, sourceUrl: string, ref?: strin
     .join('\n');
 }
 
-async function resolveAlId(anilistId?: string | null, malId?: string | null): Promise<number | null> {
-  if (anilistId) return parseInt(anilistId);
-  if (malId) return malToAnilist(parseInt(malId));
-  return null;
-}
-
 async function fetchEpisodes(source: Source, siteIds: any, overrides: { heavenId?: string } = {}): Promise<{ episodes: any[]; siteId: string; error?: string }> {
   const heavenId = overrides.heavenId || (siteIds.siteIds?.animeheaven as string | undefined);
 
@@ -76,7 +70,7 @@ app.get('/search', async (c) => {
   const q = c.req.query('q');
   if (!q) return c.json({ error: 'Missing ?q=' }, 400);
   try {
-    const results = await searchAnilist(q);
+    const results = await searchMal(q);
     return c.json({ query: q, count: results.length, results });
   } catch (e) {
     return c.json({ error: 'Search failed', detail: String(e) }, 500);
@@ -88,10 +82,8 @@ app.get('/info', async (c) => {
   const malId = c.req.query('malId');
   if (!anilistId && !malId) return c.json({ error: 'Provide ?anilistId= or ?malId=' }, 400);
   try {
-    const alId = await resolveAlId(anilistId, malId);
-    if (!alId) return c.json({ error: 'Anime not found on AniList' }, 404);
-    const info = await getSiteIds(alId);
-    if (!info) return c.json({ error: 'Could not fetch info' }, 404);
+    const info = await resolveSiteIds(anilistId, malId);
+    if (!info) return c.json({ error: 'Anime not found' }, 404);
     return c.json(info);
   } catch (e) {
     return c.json({ error: String(e) }, 500);
@@ -115,14 +107,12 @@ app.get('/episodes', async (c) => {
       return c.json({ anilistId: null, malId: null, title: null, source, siteId: heavenId, count: episodes.length, episodes });
     }
 
-    const alId = await resolveAlId(anilistId, malId);
-    if (!alId) return c.json({ error: 'Anime not found' }, 404);
-    const siteIds = await getSiteIds(alId);
-    if (!siteIds) return c.json({ error: 'Could not resolve site IDs' }, 404);
+    const siteIds = await resolveSiteIds(anilistId, malId);
+    if (!siteIds) return c.json({ error: 'Anime not found' }, 404);
     const result = await fetchEpisodes(source, siteIds, { heavenId: heavenId || undefined });
     if (result.error) return c.json({ error: result.error }, 404);
     return c.json({
-      anilistId: alId, malId: siteIds.malId, title: siteIds.title, source,
+      anilistId: siteIds.anilistId, malId: siteIds.malId, title: siteIds.title, source,
       siteId: result.siteId, count: result.episodes.length, episodes: result.episodes,
     });
   } catch (e) {
@@ -149,11 +139,7 @@ app.get('/servers', async (c) => {
   try {
     const siteIds = heavenId && source === 'animeheaven'
       ? { anilistId: null, malId: null, title: null, siteIds: { animeheaven: heavenId } }
-      : await (async () => {
-          const alId = await resolveAlId(anilistId, malId);
-          if (!alId) return null;
-          return getSiteIds(alId);
-        })();
+      : await resolveSiteIds(anilistId, malId);
     if (!siteIds) return c.json({ error: 'Could not resolve site IDs' }, 404);
 
     const epResult = await fetchEpisodes(source, siteIds, { heavenId: heavenId || undefined });
@@ -197,11 +183,7 @@ async function watchHandler(c: any, source: string, id: string, ep: string, type
   try {
     const siteIds = directHeavenId
       ? { anilistId: null, malId: null, title: null, siteIds: { animeheaven: id } }
-      : await (async () => {
-          const alId = await resolveAlId(anilistId, malId);
-          if (!alId) return null;
-          return getSiteIds(alId);
-        })();
+      : await resolveSiteIds(anilistId, malId);
     if (!siteIds) return c.json({ error: 'Could not resolve anime' }, 404);
 
     const epResult = await fetchEpisodes(source as Source, siteIds, { heavenId: heavenOverride || undefined });
