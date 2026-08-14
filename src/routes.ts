@@ -72,8 +72,8 @@ app.get('/search', async (c) => {
   try {
     const results = await searchMal(q);
     return c.json({ query: q, count: results.length, results });
-  } catch (e) {
-    return c.json({ error: 'Search failed', detail: String(e) }, 500);
+  } catch (e: any) {
+    return c.json({ error: 'Search failed', detail: e?.message || String(e), upstream: e?.response?.data ?? null }, 500);
   }
 });
 
@@ -85,8 +85,8 @@ app.get('/info', async (c) => {
     const info = await resolveSiteIds(anilistId, malId);
     if (!info) return c.json({ error: 'Anime not found' }, 404);
     return c.json(info);
-  } catch (e) {
-    return c.json({ error: String(e) }, 500);
+  } catch (e: any) {
+    return c.json({ error: e?.message || String(e), upstream: e?.response?.data ?? null }, 500);
   }
 });
 
@@ -115,8 +115,8 @@ app.get('/episodes', async (c) => {
       anilistId: siteIds.anilistId, malId: siteIds.malId, title: siteIds.title, source,
       siteId: result.siteId, count: result.episodes.length, episodes: result.episodes,
     });
-  } catch (e) {
-    return c.json({ error: String(e) }, 500);
+  } catch (e: any) {
+    return c.json({ error: e?.message || String(e), upstream: e?.response?.data ?? null }, 500);
   }
 });
 
@@ -162,8 +162,8 @@ app.get('/servers', async (c) => {
       siteId: epResult.siteId,
       servers: filtered.map((s: any) => ({ name: s.name, sourceId: s.sourceId, type: s.type })),
     });
-  } catch (e) {
-    return c.json({ error: String(e) }, 500);
+  } catch (e: any) {
+    return c.json({ error: e?.message || String(e), upstream: e?.response?.data ?? null }, 500);
   }
 });
 
