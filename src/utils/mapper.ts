@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from '../utils/http';
 import { anilistClient } from './fetch';
 import { cacheGet, cacheSet } from './cache';
 import { findAnimeHeavenId } from '../scrapers/animeheaven';
