@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { searchMal, resolveSiteIds } from './utils/mapper';
 import { cacheStats } from './utils/cache';
 
-import { getHeavenEpisodes, getHeavenServers, getHeavenStream } from './scrapers/animeheaven';
+import { getHeavenEpisodes, getHeavenServers, getHeavenStream, debugHeavenPage } from './scrapers/animeheaven';
 import { getAnikotoEpisodes, getAnikotoServers, getAnikotoEmbedUrl } from './scrapers/anikoto';
 
 const app = new Hono();
@@ -442,6 +442,19 @@ app.get('/proxy/video', async (c) => {
     return new Response(upstream.body, { status: upstream.status, headers });
   } catch (e: any) {
     return c.json({ error: 'Video proxy failed', detail: e?.message || String(e) }, 502);
+  }
+});
+
+// Temporary diagnostic — remove once the AnimeHeaven episode-scraping issue
+// is confirmed fixed. GET /api/debug/heaven?id=<heavenId>
+app.get('/debug/heaven', async (c) => {
+  const id = c.req.query('id');
+  if (!id) return c.json({ error: 'Missing ?id=' }, 400);
+  try {
+    const info = await debugHeavenPage(id);
+    return c.json(info);
+  } catch (e: any) {
+    return c.json({ error: e?.message || String(e) }, 500);
   }
 });
 
