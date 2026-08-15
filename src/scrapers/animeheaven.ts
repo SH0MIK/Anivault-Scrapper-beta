@@ -194,6 +194,23 @@ export async function getHeavenServers(episodeId: string): Promise<HeavenServer[
   ];
 }
 
+// Temporary diagnostic — remove once the episode-scraping issue is fixed.
+export async function debugHeavenPage(animeId: string) {
+  const res = await http.get(`/anime.php?${animeId}`);
+  const html = typeof res.data === 'string' ? res.data : JSON.stringify(res.data);
+  const $ = cheerio.load(html);
+  return {
+    status: res.status,
+    contentLength: html.length,
+    pageTitle: $('title').text(),
+    gatehLinks: $('a[onmouseover*="gateh("]').length,
+    gateaLinks: $('a[onclick*="gatea("]').length,
+    watch2Elements: $('.watch2').length,
+    anyAnchorTags: $('a').length,
+    snippet: html.slice(0, 1500),
+  };
+}
+
 export async function getHeavenStream(episodeId: string): Promise<HeavenStream | null> {
   const cacheKey = `heaven:stream:${episodeId}`;
   const cached = cacheGet<HeavenStream>(cacheKey);
